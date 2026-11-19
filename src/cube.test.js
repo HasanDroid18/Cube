@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { solved, apply, applyAll, parse, chunks, inverse, goalMet, course, helpMove, pushMove, LOOK, moveInfo } from './cube.js'
+import { solved, apply, applyAll, parse, chunks, inverse, goalMet, course, helpMove, pushMove, LOOK, moveInfo, seen } from './cube.js'
 import { LEVELS, TRICKS, WIGGLE } from './levels.js'
 
 const ALL = { solved: 'all' }
@@ -75,6 +75,13 @@ for (const l of LEVELS.filter(l => l.type === 'tour')) for (const st of l.steps.
   assert(hits.length < s.length, `${l.id}: every piece matches "${st.say}"`)
   taps++
 }
+
+// map pictures: what the front-right-top view shows (W white, G green front, R red right, Y yellow, B blue, . grey)
+const L = { '#F4F4F0': 'W', '#FFD500': 'Y', '#C41E3A': 'R', '#FF5800': 'O', '#009B48': 'G', '#0046AD': 'B' }
+const pic = (s, goal) => Object.values(seen(s, goal)).map(f => f.map(c => L[c] ?? '.').join('')).join(' ')
+assert.equal(pic(solved(), { solved: 'cross' }), '.W.WWW.W. .G..G.... .R..R....', 'white cross picture')
+assert.equal(pic(applyAll(solved(), 'x2'), { solved: 'f2l', up: 'yEdges' }), '.Y.YYY.Y. ...BBBBBB ...RRRRRR', 'yellow cross picture')
+assert.equal(pic(applyAll(solved(), 'R'), null), 'WWGWWGWWG GGYGGYGGY RRRRRRRRR', 'R turn picture')
 
 // copy: short bubbles, short sentences, kid words, short tours
 let bubbles = 0

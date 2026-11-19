@@ -95,6 +95,16 @@ export function display(c, goal) {
   return goal.up && SETS[goal.up](c.h) ? 'yellow' : 'grey'
 }
 
+// what a camera at front-right-top sees, for flat pictures: U, F and R as 9 colours each (null = grey plastic),
+// cell u + 3v. U: u = +x, v = +z (back to front); F: u = +x, v = -y; R: u = -z, v = -y (both top to bottom)
+const SEEN = { U: [[0, 1, 0], (u, v) => [u, 1, v]], F: [[0, 0, 1], (u, v) => [u, -v, 1]], R: [[1, 0, 0], (u, v) => [1, -v, -u]] }
+export const seen = (state, goal) => Object.fromEntries(Object.entries(SEEN).map(([f, [n, at]]) => [f,
+  [-1, 0, 1].flatMap(v => [-1, 0, 1].map(u => {
+    const c = state.find(c => eq(c.p, at(u, v))), m = display(c, goal)
+    const a = [0, 1, 2].find(a => c.h[a] && eq(c.o[a].map(x => x * c.h[a]), n)) // its sticker facing out along n
+    return m === 'full' || (m === 'yellow' && a === 1 && c.h[a] < 0) ? stickerColor(a, c.h[a]) : null
+  }))]))
+
 // colour of the sticker on home face (axis, sign)
 export const COLORS = [['#FF5800', '#C41E3A'], ['#FFD500', '#F4F4F0'], ['#0046AD', '#009B48']] // [axis][sign>0]
 export const stickerColor = (axis, sign) => COLORS[axis][sign > 0 ? 1 : 0]
