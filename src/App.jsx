@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Cube3D, { calm } from './Cube3D.jsx'
-import Level, { randomMoves, Rating } from './Level.jsx'
+import Level, { Icon, Pip, randomMoves, Rating } from './Level.jsx'
 import { goalMet, ink, inverse } from './cube.js'
 import { LEVELS, WORLDS } from './levels.js'
 import { sfx } from './sound.js'
 import './App.css'
 
-const KEY = 'cubewise-progress'
+const KEY = 'cubewise-progress-v2' // level ids changed in v2: older progress is simply not read
 const HOME_BG = '#FFD500', FREE_BG = '#B4B4AE' // free play shows all six colours: bare plastic grey hides none of them
-const FREE = { type: 'free', id: '', title: 'Free play', pre: '', text: 'Your cube to play with. Scramble it, try to solve it, or let it solve itself back.' }
+const FREE = { type: 'free', id: '', title: 'Free play', pre: '', letters: true, say: ['Your own cube to play with!', 'Mix it up, then try to fix it.'] }
 const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {} } catch { return {} } }
 const save = p => { try { localStorage.setItem(KEY, JSON.stringify(p)) } catch { /* storage unavailable */ } }
 const unlocked = (p, i) => i === 0 || p[LEVELS[i - 1].id] > 0
@@ -58,14 +58,12 @@ function Home({ progress, onStart, onContinue, onFree }) {
       </header>
       <Cube3D ref={cube} className="hero-cube" onMoveDone={onMoveDone} onSwipe={onSwipe} />
       <div className="home-copy">
-        <h1><span>Solve the cube.</span> <span>One layer at a time.</span></h1>
-        <p className="sub">Nine short worlds take you from never having touched a Rubik's cube to solving one on your own.</p>
+        <h1><span>Solve the cube.</span> <span>One step at a time.</span></h1>
+        <p className="sub"><Pip size={44} />Hi, I'm Pip! I'll show you every turn.</p>
       </div>
       <div className="slab home-actions">
-        {started
-          ? <><button className="btn go big wide" onClick={onContinue}>Continue{next && <small>{next.id} {next.title}</small>}</button>
-            <button className="btn alt big" onClick={onStart}>Map</button></>
-          : <button className="btn go big wide" onClick={onStart}>Start learning</button>}
+        <button className="btn go big wide play" onClick={onContinue}><Icon d="M7 4.5v15l12.5-7.5z" size={26} /><span>Play{started && next && <small>{next.id} {next.title}</small>}</span></button>
+        <button className="btn alt big" onClick={onStart}>Map</button>
         <button className="btn yellow big" onClick={onFree}>Free play</button>
       </div>
     </div>
@@ -167,7 +165,7 @@ export default function App() {
         {screen === 'free' && <Level level={FREE} onWin={() => {}} onMap={() => go('map')} />}
         {/* a new world opens on the map, so its sticker can arrive; inside a world, straight on */}
         {screen === 'level' && <Level level={LEVELS[cur]} hasNext={!!nxt} unlock={fresh != null ? WORLDS[fresh] : null}
-          nextLabel={crossing ? `World ${nxt.world + 1}` : 'Next level'}
+          nextLabel={crossing ? 'Next world' : 'Next'}
           onWin={onWin} onMap={() => setScreen('map')} onNext={() => crossing ? (setSel(nxt.world), setScreen('map')) : play(cur + 1)} />}
       </main>
     </div>

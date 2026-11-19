@@ -28,12 +28,14 @@ export function apply(state, move) {
   return state.map(c => inLayer(c, mi) ? { h: c.h, p: rot(c.p, mi.axis, mi.dir), o: c.o.map(v => rot(v, mi.axis, mi.dir)) } : c)
 }
 
-// "R U2 R'" -> ['R','U','U',"R'"]
-export const parse = str => str.trim().split(/\s+/).filter(Boolean).flatMap(t => {
+// "R U2 R'" -> ['R','U','U',"R'"]; "/" only marks chunk breaks for display
+export const parse = str => str.trim().split(/\s+/).filter(t => t && t !== '/').flatMap(t => {
   const m = t[0] + (t.includes("'") ? "'" : '')
   return t.includes('2') ? [m, m] : [m]
 })
-export const inverse = moves => [...moves].reverse().map(m => m.endsWith("'") ? m[0] : m + "'")
+export const chunks = str => str.split('/').map(parse).filter(c => c.length)
+export const inv = m => m.endsWith("'") ? m[0] : m + "'"
+export const inverse = moves => [...moves].reverse().map(inv)
 export const applyAll = (state, moves) => (typeof moves === 'string' ? parse(moves) : moves).reduce(apply, state)
 
 const kind = h => h.filter(Boolean).length // 1 center, 2 edge, 3 corner
@@ -67,6 +69,25 @@ export function goalMet(state, goal) {
     && (!goal.up || of(goal.up).every(c => eq(c.o[1], M[1])))
     && (!goal.placed || of(goal.placed).every(c => placedOk(c, M)))
 }
+
+export const same = (a, b) => a.every((c, i) => eq(c.p, b[i].p) && c.o.every((v, k) => eq(v, b[i].o[k])))
+
+// player history with X X' cancelled and X X X folded to X', so walking back always shortens it
+export function pushMove(h, m) {
+  if (h.at(-1) === inv(m)) return h.slice(0, -1)
+  if (h.at(-1) === m && h.at(-2) === m) return [...h.slice(0, -2), inv(m)]
+  return [...h, m]
+}
+// the help ladder. course: {moves, path: state after each prefix of moves}. On the path: its next move;
+// off it: undo the last move. Ends on the path because pushMove shortens hist on every walk-back.
+export const course = (start, moves) => ({ moves, path: moves.reduce((a, m) => [...a, apply(a.at(-1), m)], [start]) })
+export function helpMove({ moves, path }, state, hist) {
+  for (let k = path.length - 1; k >= 0; k--) if (same(path[k], state)) return moves[k] ?? null
+  return hist.length ? inv(hist.at(-1)) : null
+}
+
+// how each move looks from the default camera (front-right-top): the way the front (or, for F/B, top) stickers go
+export const LOOK = { R: 'up', "R'": 'down', L: 'down', "L'": 'up', U: 'left', "U'": 'right', D: 'right', "D'": 'left', F: 'cw', "F'": 'ccw', B: 'ccw', "B'": 'cw', y: 'left', "y'": 'right' }
 
 export function display(c, goal) {
   if (!goal) return 'full'
